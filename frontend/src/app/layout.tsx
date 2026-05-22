@@ -1,9 +1,21 @@
 import type { Metadata } from "next";
-import { Inter, JetBrains_Mono } from "next/font/google";
+import { Orbitron, Space_Grotesk, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 
-const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
-const jetbrains = JetBrains_Mono({ subsets: ["latin"], variable: "--font-mono" });
+const orbitron = Orbitron({ 
+  subsets: ["latin"], 
+  variable: "--font-orbitron",
+  weight: ["400", "500", "600", "700", "800", "900"]
+});
+const spaceGrotesk = Space_Grotesk({ 
+  subsets: ["latin"], 
+  variable: "--font-space",
+  weight: ["300", "400", "500", "600", "700"]
+});
+const jetbrains = JetBrains_Mono({ 
+  subsets: ["latin"], 
+  variable: "--font-mono" 
+});
 
 export const metadata: Metadata = {
   title: "ThreatLens | Continuous Security Validation",
@@ -17,9 +29,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className="dark">
-      <body className={`${inter.variable} ${jetbrains.variable} font-sans bg-slate-950 text-slate-200 antialiased min-h-screen selection:bg-sky-500/30 selection:text-sky-200`}>
+      <body className={`${spaceGrotesk.variable} ${orbitron.variable} ${jetbrains.variable} font-sans bg-cyber-bg text-cyber-blue antialiased min-h-screen selection:bg-cyber-blue/30 selection:text-white`}>
         {children}
       </body>
     </html>
   );
 }
+
