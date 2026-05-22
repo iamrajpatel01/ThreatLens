@@ -1,0 +1,1 @@
+{"name":"ThreatLens Continuous Validation","description":"An Autonomous Continuous Security Validation (CSV) Platform that maps attack surfaces, identifies chained attack paths, and generates secure remediations.","requestFramePermissions":[],"majorCapabilities":["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]}

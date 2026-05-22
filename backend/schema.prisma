@@ -1,0 +1,135 @@
+generator client {
+  provider = "prisma-client-py"
+  recursive_type_depth = 5
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+// -------------------------------------------------------------
+// CORE ENTITIES (The Foundation)
+// -------------------------------------------------------------
+
+model Scope {
+  id        String   @id @default(uuid())
+  domain    String   @unique
+  createdAt DateTime @default(now())
+  assets    Asset[]
+}
+
+model Asset {
+  id        String   @id @default(uuid())
+  name      String   // e.g., corporate.com, 10.0.0.1, s3-bucket-name
+  type      String   // 'Domain', 'Subdomain', 'IP', 'Cloud Bucket'
+  status    String   @default("active")
+  sslStatus String?  // e.g., 'Valid', 'Expired', 'None'
+  sslExpiration DateTime?
+  createdAt DateTime @default(now())
+  lastSeen  DateTime @default(now())
+
+  // Relationships
+  scopeId   String?
+  scope     Scope?   @relation(fields: [scopeId], references: [id], onDelete: Cascade)
+  
+  // Asset to Asset linking (e.g. Subdomain mapping to IP)
+  linkedFrom Asset[] @relation("AssetLinks")
+  linkedTo   Asset[] @relation("AssetLinks")
+
+  services        Service[]
+  vulnerabilities Vulnerability[]
+}
+
+model Service {
+  id          String   @id @default(uuid())
+  port        Int
+  protocol    String
+  // SQLite doesn't support arrays, so we serialize to JSON strings
+  techStack   String // E.g., '["Express", "React", "PostgreSQL"]'
+  endpoints   String // Discovered REST routes
+  
+  // Relationships
+  assetId     String
+  asset       Asset    @relation(fields: [assetId], references: [id], onDelete: Cascade)
+  
+  identities  Identity[]
+}
+
+model Identity {
+  id        String   @id @default(uuid())
+  email     String?
+  role      String?
+  source    String   // Where was it found? (e.g. "github-leaked-config")
+  leakedAt  DateTime @default(now())
+
+  // Relationships
+  serviceId String?
+  service   Service? @relation(fields: [serviceId], references: [id])
+}
+
+model Vulnerability {
+  id                 String   @id @default(uuid())
+  title              String
+  type               String   // E.g., IDOR, EXPOSED_API_KEY
+  severity           String   // Changed from Enum to String
+  description        String
+  context            String   // "So What?" (Attack Path explanation)
+  attackPathSequence String   // Array of IDs serialized as JSON
+
+  createdAt          DateTime @default(now())
+
+  // Relationships
+  assets             Asset[]
+  
+  remediations       Remediation[]
+  evidences          Evidence[]
+}
+
+model Evidence {
+  id              String   @id @default(uuid())
+  requestA        String   // JSON or Raw HTTP string of User A's intercepted request
+  requestB        String   // JSON or Raw HTTP string of the tampered request
+  responseA       String   // JSON or Raw HTTP string of the legitimate response
+  responseB       String   // JSON or Raw HTTP string of the vulnerable response
+  createdAt       DateTime @default(now())
+
+  vulnerabilityId String
+  vulnerability   Vulnerability @relation(fields: [vulnerabilityId], references: [id], onDelete: Cascade)
+}
+
+model Remediation {
+  id              String   @id @default(uuid())
+  title           String
+  type            String   // MiddlewareCode, PatchCode, NginxConfig
+  snippet         String   // Code fix
+  description     String
+  prBody          String?  // LLM generated pull request description
+  
+  // Relationships
+  vulnerabilityId String
+  vulnerability   Vulnerability @relation(fields: [vulnerabilityId], references: [id], onDelete: Cascade)
+}
+
+// -------------------------------------------------------------
+// ENGINE STATE (Logic Testing)
+// -------------------------------------------------------------
+
+model ScanActivity {
+  id        String     @id @default(uuid())
+  status    String     @default("PENDING")
+  logs      String?    // JSON stringified log array
+  startedAt DateTime   @default(now())
+  endedAt   DateTime?
+}
+
+model IdorTestEvidence {
+  id           String   @id @default(uuid())
+  timestamp    DateTime @default(now())
+  endpoint     String
+  requestUserA String
+  requestUserB String
+  responseA    String   // JSON payload A
+  responseB    String   // JSON payload B
+  status       String   // Vulnerable | Secure
+}
